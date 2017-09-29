@@ -1,0 +1,38 @@
+image: schteeben/anu:ass03
+
+stages:
+    - anti-cheat
+    - build
+    - test
+    - deploy
+    
+Hacks:
+    stage: anti-cheat
+    tags:
+        - comp1100
+    script:
+        - sh /Scripts/CheatingCheck.sh
+    
+Compilation:
+    stage: build
+    tags:
+        - comp1100
+    script:
+        - stack setup
+        - stack build
+        
+Runtime:
+    stage: test
+    tags:
+        - comp1100
+    script:
+        - stack setup
+        - stack build
+        - stack exec ConnectX
+        
+Submission: 
+    stage: deploy
+    tags:
+        - comp1100
+    script:
+        - echo "Yay!"

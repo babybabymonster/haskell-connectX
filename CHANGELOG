@@ -1,0 +1,7 @@
+2017-09-30  v1.1.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Move the following functions into Data.Board from Transition.Mechanics
+        * updateBoard
+        * isGameOver
+        * hasWon
+        * placePiece

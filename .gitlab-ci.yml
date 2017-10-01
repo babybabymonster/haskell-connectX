@@ -26,9 +26,7 @@ Runtime:
     tags:
         - comp1100
     script:
-        - stack setup
-        - stack build
-        - stack exec ConnectX
+        - sh /Scripts/RunGame.sh
         
 Submission: 
     stage: deploy

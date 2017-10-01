@@ -10,3 +10,8 @@
 
     * Expose `getScore` in Data.Board to other modules.
     * Fixed a bug in Transition.Mechanics
+    
+2017-10-01  v1.3.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Change Blue bot back to undefined.
+    * Change Runtime tests to run with default environment.

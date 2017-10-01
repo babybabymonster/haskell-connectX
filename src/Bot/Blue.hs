@@ -9,4 +9,4 @@ module Bot.Blue where
 import Data.Board
 
 makeMove :: Board -> LookAhead -> Int
-makeMove = undefined
+makeMove _ _ = 2

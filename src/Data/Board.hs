@@ -12,6 +12,7 @@ module Data.Board (
     validMove,      -- :: Board -> Index -> Bool,
     winBonus,       -- :: Board -> Score
     updateBoard,    -- :: Board -> Index -> Board
+    getScore,       -- :: Board -> Player -> Score
     initialiseBoard -- :: Dimension -> Player -> Int -> Board
 ) where
 

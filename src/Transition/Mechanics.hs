@@ -112,7 +112,7 @@ playGame b opts = do
                                        (True, True)
                                            | stalls == noOfStallTolerated -> return validB
                                            | otherwise -> lookDeeper startB validB elapsedT nextBoard (look + 1) (stalls + 1) timeouts
-                                       (True, False) -> lookDeeper startB validB elapsedT nextBoard (look + 1) 0 timeouts
+                                       (True, False) ->   lookDeeper startB validB timeUsed nextBoard (look + 1) 0 timeouts
                                        (False, _   ) -> return lastB
                              
                              where

@@ -5,3 +5,8 @@
         * isGameOver
         * hasWon
         * placePiece
+        
+2017-10-01  v1.2.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Expose `getScore` in Data.Board to other modules.
+    * Fixed a bug in Transition.Mechanics

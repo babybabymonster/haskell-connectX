@@ -15,3 +15,9 @@
 
     * Change Blue bot back to undefined.
     * Change Runtime tests to run with default environment.
+    
+2017-10-02  v1.4.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Correct game winning scoring system.
+    * Add additional information to show with Board.
+    * Change default timeout to 5 seconds.

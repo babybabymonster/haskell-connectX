@@ -22,7 +22,7 @@ data Options = Options {
     
 defaultOptions :: Options
 defaultOptions = Options {
-    timeLimit = 1.0,
+    timeLimit = 5.0,
     isHuman   = Nothing,
     boardDim  = (11, 10),
     winStreak = 5

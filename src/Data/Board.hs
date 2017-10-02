@@ -150,7 +150,7 @@ hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
         rowWin       = or $ map winInColumn $ transpose unfilledMat
         diagonalWin  = or $ map winInColumn $ diagonals unfilledMat
         otherDiagWin = or $ map (winInColumn . filter (/= Empty))
-                            $ diagonals $ map reverse $ board b
+                            $ diagonals $ map (reverse . (fillColumn Empty (snd $ dimension b))) unfilledMat
 
         winInColumn :: Column Cell -> Bool
         winInColumn list = case list of

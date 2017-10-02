@@ -21,3 +21,7 @@
     * Correct game winning scoring system.
     * Add additional information to show with Board.
     * Change default timeout to 5 seconds.
+    
+2017-10-03  v1.5.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Fix game winning detection

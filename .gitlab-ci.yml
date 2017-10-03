@@ -1,10 +1,21 @@
 image: schteeben/anu:ass03
 
 stages:
+    - integrity
     - anti-cheat
     - build
     - test
     - deploy
+    
+before_script:
+    - ssh-keyscan gitlab.cecs.anu.edu.au >> ~/.ssh/known_hosts
+    
+Integrity:
+    stage: integrity
+    tags:
+        - comp1100
+    script:
+        - sh /Scripts/IntegrityCheck.sh
     
 Hacks:
     stage: anti-cheat

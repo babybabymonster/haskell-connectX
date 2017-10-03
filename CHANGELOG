@@ -25,3 +25,8 @@
 2017-10-03  v1.5.0  Steven X. Han   <steven.han@anu.edu.au>
 
     * Fix game winning detection
+    
+2017-10-03  v1.6.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Fix scoring system
+    * Add additional safety check in pipeline

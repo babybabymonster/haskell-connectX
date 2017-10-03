@@ -140,6 +140,7 @@ hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
     where
         streak      = connect b
         unfilledMat = board b
+        height      = snd $ dimension b
 
         identicalElems :: (Eq a) => [a] -> Bool
         identicalElems list = case list of
@@ -147,10 +148,13 @@ hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
             _          -> True
 
         columnWin    = or $ map winInColumn unfilledMat
-        rowWin       = or $ map winInColumn $ transpose unfilledMat
+        rowWin       = or $ map winInColumn 
+                            $ concatMap (splitOn [Empty]) 
+                                $ transpose 
+                                    $ map (fillColumn Empty height) unfilledMat
         diagonalWin  = or $ map winInColumn $ diagonals unfilledMat
         otherDiagWin = or $ map (winInColumn . filter (/= Empty))
-                            $ diagonals $ map (reverse . (fillColumn Empty (snd $ dimension b))) unfilledMat
+                            $ diagonals $ map (reverse . (fillColumn Empty height)) unfilledMat
 
         winInColumn :: Column Cell -> Bool
         winInColumn list = case list of

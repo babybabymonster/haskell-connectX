@@ -63,15 +63,12 @@ playGame b opts = do
         readHumanMove :: IO Index
         readHumanMove = do
             move <- getLine
-            case move of
-                [d] ->
-                    if isDigit d
-                    then 
-                        if (read move) `elem` [1 ..(fst $ dimension b)]
-                        then return $ read move
-                        else error "No such point"
-                    else error "You didn't enter a digit"
-                _   -> error "You entered more than a single character"
+            if (all isDigit move)
+            then
+                if (read move) `elem` [1 .. (fst $ dimension b)]
+                then return $ read move
+                else error "No such index"
+            else error "You didn't enter a number"
                 
         nextInTime :: Board -> IO Board
         nextInTime cBoard = do

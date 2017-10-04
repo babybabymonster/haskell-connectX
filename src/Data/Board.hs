@@ -4,16 +4,17 @@
 
 module Data.Board (
     Board (Board, board, blueScore, redScore, turn, connect, dimension),
-    Index,          -- = Int
-    Dimension,      -- = (Int, Int)
-    LookAhead,      -- = Int
-    Score,          -- = Int
-    scorise,        -- :: Board -> Board
-    validMove,      -- :: Board -> Index -> Bool,
-    winBonus,       -- :: Board -> Score
-    updateBoard,    -- :: Board -> Index -> Board
-    initialiseBoard, -- :: Dimension -> Player -> Int -> Board
-    getScore,       -- :: Board -> Player -> Score
+    Index,              -- = Int
+    Dimension,          -- = (Int, Int)
+    LookAhead,          -- = Int
+    Score,              -- = Int
+    scorise,            -- :: Board -> Board
+    validMove,          -- :: Board -> Index -> Bool,
+    winBonus,           -- :: Board -> Score
+    updateBoard,        -- :: Board -> Index -> Board
+    updateBoardNoScore, -- :: Board -> Index -> Board
+    initialiseBoard,    -- :: Dimension -> Player -> Int -> Board
+    getScore,           -- :: Board -> Player -> Score
 ) where
 
 import Data.Cell (Cell (Empty))
@@ -125,6 +126,19 @@ updateBoard b i
     | isGameOver b        = b { turn = Finished }
     | not $ validMove b i = b
     | otherwise           = scorise $ b { board = board newBoard
+                              , turn = otherPlayer $ turn b}
+        where
+            newBoard = Board { board = placePiece (board b) i (turn b) }
+            
+updateBoardNoScore :: Board -> Index -> Board
+updateBoardNoScore b i
+    | hasWon b            = case turn b of
+                                BlueBot -> b { turn = Finished }
+                                RedBot  -> b { turn = Finished }
+                                _       -> b
+    | isGameOver b        = b { turn = Finished }
+    | not $ validMove b i = b
+    | otherwise           = b { board = board newBoard
                               , turn = otherPlayer $ turn b}
         where
             newBoard = Board { board = placePiece (board b) i (turn b) }

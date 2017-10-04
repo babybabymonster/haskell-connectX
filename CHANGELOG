@@ -35,3 +35,8 @@
 
     * Fix game winning detection in rows
     * Fix problem of only being able to enter a single character
+    
+2017-10-03  v1.8.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Add function `updateBoardNoScore` for efficiency improvements.
+    * Enable tournament server submission.

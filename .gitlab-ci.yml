@@ -44,4 +44,4 @@ Submission:
     tags:
         - comp1100
     script:
-        - echo "Yay!"
+        - sh /Scripts/Submit.sh

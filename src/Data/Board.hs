@@ -26,6 +26,8 @@ import Data.List (intercalate, transpose)
 import Data.List.Split (splitOn)
 import Data.Universe.Helpers (diagonals)
 
+import Debug.Trace
+
 data Board = Board { board     :: Matrix Cell
                    , blueScore :: Score
                    , redScore  :: Score
@@ -150,7 +152,7 @@ isGameOver b = hasWon b || (and $ map (\x -> length x == depth) mat)
         depth       = snd $ dimension b
 
 hasWon :: Board -> Bool
-hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
+hasWon b = trace (concatMap show [columnWin, rowWin, diagonalWin, otherDiagWin]) $ columnWin || rowWin || diagonalWin || otherDiagWin
     where
         streak      = connect b
         unfilledMat = board b
@@ -166,9 +168,15 @@ hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
                             $ concatMap (splitOn [Empty]) 
                                 $ transpose 
                                     $ map (fillColumn Empty height) unfilledMat
-        diagonalWin  = or $ map winInColumn $ diagonals unfilledMat
-        otherDiagWin = or $ map (winInColumn . filter (/= Empty))
-                            $ diagonals $ map (reverse . (fillColumn Empty height)) unfilledMat
+        diagonalWin  = or $ map winInColumn 
+                            $ concatMap (splitOn [Empty]) 
+                                $ diagonals 
+                                    $ map (fillColumn Empty height) unfilledMat
+        otherDiagWin = or $ map winInColumn 
+                                $ concatMap (splitOn [Empty]) 
+                                    $ diagonals 
+                                        $ map (reverse . (fillColumn Empty height)) 
+                                            unfilledMat
 
         winInColumn :: Column Cell -> Bool
         winInColumn list = case list of

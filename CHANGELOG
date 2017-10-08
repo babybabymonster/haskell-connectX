@@ -40,3 +40,7 @@
 
     * Add function `updateBoardNoScore` for efficiency improvements.
     * Enable tournament server submission.
+    
+2017-10-08  v1.9.0  Steven X. Han   <steven.han@anu.edu.au>
+
+    * Fix winning detection. 

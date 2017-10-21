@@ -10,7 +10,7 @@ import Data.Board
 --import Data.Player
 import Data.List
 import Data.Ord
-import Data.Cell (Cell (Empty))
+import Data.Cell
 import Data.Player
 import Data.Column
 import Data.List.Split (splitOn)
@@ -26,15 +26,18 @@ type GN = (Index, Player)
 type GNS = [(Index, Player)]
 
 makeMove :: Board -> LookAhead -> Int
-makeMove b depth = case turn b of
-    BlueBot -> fst $ head $ snd $ maxAlg b (genTree b depth [])
-    RedBot -> fst $ head $ snd $ minAlg b (genTree b depth [])
-    _ -> error "no a valid player"
+makeMove b depth
+    | odd depth = fst $ head $ snd $ maxAlg b (genTree 1 b depth [])
+    | otherwise = fst $ head $ snd $ maxAlg b (genTree 2 b depth [])
+--     RedBot -> fst $ head $ snd $ minAlg b (genTree b depth [])
+--     | -> error "not a valid player"
 
 -- generate a tree of [(Index, Player)]
-genTree :: Board -> LookAhead -> GNS -> Tree GNS
-genTree _ 0 gs = (Node gs [])
-genTree bod n gs = (Node gs $ map (genTree bod (n-1)) $ filter (\x -> validIndexes bod x) $ buildNodes gs (genGNS n bod))
+genTree :: Int -> Board -> LookAhead -> GNS -> Tree GNS
+genTree _ _ 0 gs = (Node gs [])
+genTree x bod n gs = case x of
+    1 -> (Node gs $ map (genTree 1 bod (n-1)) $ filter (\x -> validIndexes bod x) $ buildNodes gs (genGNSodd n bod))
+    2 -> (Node gs $ map (genTree 2 bod (n-1)) $ filter (\x -> validIndexes bod x) $ buildNodes gs (genGNSeven n bod))
         -- where
 
 validIndexes :: Board -> GNS -> Bool
@@ -76,15 +79,22 @@ buildNodes :: GNS -> GNS -> [GNS]
 buildNodes gs1 gs2 = map (add gs1) gs2
     where add gns g = gns ++ [g]
 
-genGNS :: LookAhead -> Board -> GNS
-genGNS look bd
+genGNSodd :: LookAhead -> Board -> GNS
+genGNSodd look bd
+    | odd look = zip ordIndexes (replicate (length ordIndexes) (turn bd))
+    | even look = zip ordIndexes (replicate (length ordIndexes) (otherPlayer (turn bd)))
+    where   ordIndexes = sortBy (comparing (\i -> abs $ (fst(dimension bd) + 1) `div` 2 - i)) indexes
+            indexes = [1..fst(dimension bd)]
+
+genGNSeven :: LookAhead -> Board -> GNS
+genGNSeven look bd
+    | even look = zip ordIndexes (replicate (length ordIndexes) (turn bd))
     | odd look = zip ordIndexes (replicate (length ordIndexes) (otherPlayer (turn bd)))
-    | otherwise = zip ordIndexes (replicate (length ordIndexes) (otherPlayer (turn bd)))
     where   ordIndexes = sortBy (comparing (\i -> abs $ (fst(dimension bd) + 1) `div` 2 - i)) indexes
             indexes = [1..fst(dimension bd)]
 
 evaluate :: Board -> Score
-evaluate bd = (myGetScore bd BlueBot) - (myGetScore bd (otherPlayer RedBot))
+evaluate bd = (myGetScore bd BlueBot) - (myGetScore bd RedBot)
 
 maxAlg :: Board -> Tree GNS -> (Score, GNS)
 maxAlg maxb (Node x []) = (evaluate (myUpdateBoard maxb x), x)
@@ -136,9 +146,9 @@ myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
         streakScore :: Int -> Score
         streakScore i
             | i < minStreak     = 0
-            | i < (streak -1)   = i * 60
-            | i == (streak -1)  = i * 100
-            | i >= streak       = 10000
+            | i < (streak -1)   = 1 * 100
+            | i == (streak -1)  = i * 1000
+            | i >= streak       = i * 10000
             | otherwise         = 0
 
 myUpdateBoard :: Board -> GNS -> Board

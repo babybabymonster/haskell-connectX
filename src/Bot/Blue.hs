@@ -149,6 +149,49 @@ myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
                            $ filter ((>=streak).length) $ map concat
                                 $ map (splitOn [corresCell otherBot]) mat
 
+        streakScore :: Int -> Score
+        streakScore i
+                    | i < minStreak     = 0
+                    | i < (streak -1)   = 1 * 100
+                    | i == (streak -1)  = i * 1000
+                    | i >= streak       = i * 10000
+                    | otherwise         = 0
+
+-- myGetScore' :: Board -> Player -> Score
+myGetScore' b p = rowScore
+-- myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
+    where
+        streak    = connect b
+        minStreak = 1 + streak `div` 2
+        otherBot  = otherPlayer p
+
+        columnScore    =  calColScore $ filledMatrix
+        rowScore       =  calScore $ transpose $ filledMatrix
+        diagonalScore  =  calScore $ diagonals $ filledMatrix
+        otherDiagScore =  calScore $ diagonals $ map reverse $ filledMatrix
+
+        filledMatrix   = map (fillColumn Empty $ snd $ dimension b) $ board b
+
+        calColScore mat = sum $ (map (streakScore . length)) $ map concat
+                              $ map (splitOn [Empty]) $ filter ((>=streak).length)
+                                    $ map last $ map (splitOn [corresCell otherBot]) mat
+--         tt =
+        -- remain only the parts that has enough space to win
+        y mat = map (splitOn [Empty]) $ filter ((>=streak).length)
+                $ concatMap (splitOn [corresCell otherBot]) mat
+        -- find the situation when there spaces before and after my bots
+        emptyTwoEnd mat = filter (\x -> head x == [] && last x == []) (y mat)
+        -- add bonus for the above situation
+        bonusTwoEnd mat = sum $ map (bonusScore . length) $ filter ((>=(streak -2)).length) $ map concat (emptyTwoEnd mat)
+        -- add bonus for the situation that there are several possibilities to win
+        number mat = 10 * length (y mat)
+        -- calculate the length of my bot of each part that has a chance to win
+        calScore mat = (number mat) * (sum $ map (streakScore . length) (map concat $ y mat)) + (bonusTwoEnd mat)
+
+--         calScore mat = sum $ (map (streakScore . length)) $ map concat $ map (splitOn [Empty])
+--                            $ map (filter ((>=streak).length))
+--                                 $ map (splitOn [corresCell otherBot]) mat
+
 --         calculateScore mat =
 --             sum $ (map (streakScore . length))
 --                 $ filter ((>=minStreak).length)
@@ -164,6 +207,11 @@ myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
             | i >= streak       = i * 10000
             | otherwise         = 0
 
+        bonusScore s = s * 600
+
 myUpdateBoard :: Board -> GNS -> Board
 myUpdateBoard grid (y : ys) = myUpdateBoard (updateBoardNoScore grid $ fst y) ys
 myUpdateBoard grid [] = grid
+
+test = Board{board = [[],[Red],[Red,Blue,Blue],[Red],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (5,3), connect = 4}
+b = Board{board = [[],[],[],[Red],[Red],[Red],[],[Blue],[],[Red],[Red],[Red],[Blue],[Red],[Red],[Red],[],[],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (20,1), connect = 5}

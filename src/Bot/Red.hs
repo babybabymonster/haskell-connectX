@@ -49,16 +49,14 @@ genTree x bod n gs = case x of
 validIndexes :: Board -> GNS -> Bool
 validIndexes bb tuples
     | snd (head (maxOfSecOfTuple tupleMovedIndexes)) <= (snd $ dimension bb) = True
+--     | hasWon (myUpdateBoard bb tuples) = False
     | snd (head (maxOfSecOfTuple totalHeight)) <= (snd $ dimension bb) = True
     | otherwise = error "something's wrong"
     where
-            33
-            -- check hasWon
-
             -- the height of each column which has been put piece on
             totalHeight = zipWith (\x y -> (fst x, (snd x) + (snd y))) movedIndexesTuples tupleMovedIndexes
             movedIndexesTuples = filter (\x -> (fst x) `elem` (map fst tupleMovedIndexes)) tupleColIndexes
-            tupleColIndexes = zip [1..fst $ dimension bb]lengthOfCol
+            tupleColIndexes = zip [1..fst $ dimension bb] lengthOfCol
             lengthOfCol = map length (board bb)
             -- get a list of tuples: (index, the occurence of this index)
             tupleMovedIndexes = zip noDuplicates lengthOfIndexes
@@ -75,41 +73,41 @@ validIndexes bb tuples
 --             groupedIndexes = group $ sort listOfIndexes
 --             listOfIndexes = map fst tuples
 
-hasWon :: Board -> Bool
-hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
-    where
-        streak      = connect b
-        unfilledMat = board b
-        height      = snd $ dimension b
-
-        identicalElems :: (Eq a) => [a] -> Bool
-        identicalElems list = case list of
-            x : y : xs -> x == y && identicalElems (y : xs)
-            _          -> True
-
-        columnWin    = or $ map winInColumn unfilledMat
-        rowWin       = or $ map winInColumn
-                            $ concatMap (splitOn [Empty])
-                                $ transpose
-                                    $ map (fillColumn Empty height) unfilledMat
-        diagonalWin  = or $ map winInColumn
-                            $ concatMap (splitOn [Empty])
-                                $ diagonals
-                                    $ map (fillColumn Empty height) unfilledMat
-        otherDiagWin = or $ map winInColumn
-                                $ concatMap (splitOn [Empty])
-                                    $ diagonals
-                                        $ map (reverse . (fillColumn Empty height))
-                                            unfilledMat
-
-        winInColumn :: Column Cell -> Bool
-        winInColumn list = case list of
-            []     -> False
-            _ : xs
-                | length list >= streak ->
-                    identicalElems (take streak list)
-                    || winInColumn xs
-                | otherwise             -> False
+-- hasWon :: Board -> Bool
+-- hasWon b = columnWin || rowWin || diagonalWin || otherDiagWin
+--     where
+--         streak      = connect b
+--         unfilledMat = board b
+--         height      = snd $ dimension b
+--
+--         identicalElems :: (Eq a) => [a] -> Bool
+--         identicalElems list = case list of
+--             x : y : xs -> x == y && identicalElems (y : xs)
+--             _          -> True
+--
+--         columnWin    = or $ map winInColumn unfilledMat
+--         rowWin       = or $ map winInColumn
+--                             $ concatMap (splitOn [Empty])
+--                                 $ transpose
+--                                     $ map (fillColumn Empty height) unfilledMat
+--         diagonalWin  = or $ map winInColumn
+--                             $ concatMap (splitOn [Empty])
+--                                 $ diagonals
+--                                     $ map (fillColumn Empty height) unfilledMat
+--         otherDiagWin = or $ map winInColumn
+--                                 $ concatMap (splitOn [Empty])
+--                                     $ diagonals
+--                                         $ map (reverse . (fillColumn Empty height))
+--                                             unfilledMat
+--
+--         winInColumn :: Column Cell -> Bool
+--         winInColumn list = case list of
+--             []     -> False
+--             _ : xs
+--                 | length list >= streak ->
+--                     identicalElems (take streak list)
+--                     || winInColumn xs
+--                 | otherwise             -> False
 
 -- choose the tuple that has the largest second element
 maxOfSecOfTuple :: [(Index, Int)] -> [(Index, Int)]

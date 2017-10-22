@@ -23,7 +23,6 @@ type Forest a = [Tree a]
 
 type Moves = [Index]
 
-type S = (Score, Moves)
 
 
 makeMove :: Board -> LookAhead -> Int
@@ -121,9 +120,9 @@ minOfTuple tps = head $ filter(\z -> fst z == bestScore) tps
     where bestScore = minimum $ map fst tps
 
 myGetScore :: Board -> Player -> Score
-myGetScore bg p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
+myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
     where
-        streak    = connect bg
+        streak    = connect b
         minStreak = 1 + streak `div` 2
         otherBot  = otherPlayer p
 
@@ -132,52 +131,24 @@ myGetScore bg p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
         diagonalScore  =  calScore $ diagonals $ filledMatrix
         otherDiagScore =  calScore $ diagonals $ map reverse $ filledMatrix
 
-        filledMatrix   = map (fillColumn Empty $ snd $ dimension bg) $ board bg
+        filledMatrix   = map (fillColumn Empty $ snd $ dimension b) $ board b
 
         calColScore mat = sum $ (map (streakScore . length)) $ map concat
                               $ map (splitOn [Empty]) $ filter ((>=streak).length)
                                     $ map last $ map (splitOn [corresCell otherBot]) mat
---         calRowScore mat = filter (\x -> (>= streak - 1).length . (filter (==corresCell p) x)) $ map concat
---                         $ map (\x -> map (\y -> if y == [] then [Empty] else y))
---                          $ map (\x -> map (splitOn [Empty]) x)
---                         -- remain only the lists that is able to win
---                             $ map (filter ((>= streak).length))
---                                 $ map (splitOn [corresCell otherBot]) mat
-        -- remain only the parts that has enough space to win
-        y mat = map (splitOn [Empty]) $ filter ((>=streak).length)
-                $ concatMap (splitOn [corresCell otherBot]) mat
-        -- find the situation when there spaces before and after my bots
-        emptyTwoEnd mat = filter (\x -> head x == [] && last x == []) (y mat)
-        -- add bonus for the above situation
-        bonusTwoEnd mat = sum $ map (bonusScore . length) $ filter ((>=(streak -2)).length) $ map concat (emptyTwoEnd mat)
-        -- add bonus for the situation that there are several possibilities to win
-        number mat = 10 * length (y mat)
-        -- find the situation when there is only one space in the middle: [o,o,o, ,o,o]
-        -- calculate the length of my bot of each part that has a chance to win
-        calScore mat = (number mat) * (sum $ map (streakScore . length) (map concat $ y mat)) + (bonusTwoEnd mat)
 
---         calScore mat = sum $ (map (streakScore . length)) $ map concat $ map (splitOn [Empty])
---                            $ map (filter ((>=streak).length))
---                                 $ map (splitOn [corresCell otherBot]) mat
-
---         calculateScore mat =
---             sum $ (map (streakScore . length))
---                 $ filter ((>=minStreak).length)
---                     $ concatMap
---                         (concatMap (splitOn [corresCell otherBot]))
---                             $ map (splitOn [Empty]) mat
+        calScore mat = sum $ (map (streakScore . length)) $ concatMap (splitOn [Empty])
+                           $ filter ((>=streak).length) $ map concat
+                                $ map (splitOn [corresCell otherBot]) mat
 
         streakScore :: Int -> Score
         streakScore i
-            | i < (streak `div` 2)    = 0
-            | i < minStreak         = i * 50
-            | i < (streak -2)       = 1 * 100
-            | i == (streak -2)      = i * 800
-            | i == (streak -1)      = i * 1000
-            | i >= streak           = i * 20000
-            | otherwise             = 0
+                    | i < minStreak     = 0
+                    | i < (streak -1)   = 1 * 100
+                    | i == (streak -1)  = i * 1000
+                    | i >= streak       = i * 10000
+                    | otherwise         = 0
 
-        bonusScore s = s * 600
 
 myUpdateBoard :: Board -> Moves -> Board
 myUpdateBoard grid (y : ys) = myUpdateBoard (updateBoardNoScore grid y) ys

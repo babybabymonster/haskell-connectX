@@ -17,7 +17,6 @@ type Forest a = [Tree a]
 
 type Moves = [Index]
 
-type S = (Score, Moves)
 
 
 makeMove :: Board -> LookAhead -> Int
@@ -32,7 +31,7 @@ genTree bod n ms = (Node ms $ map (genTree bod (n-1)) $ buildNodes bod ms)
 
 buildNodes :: Board -> Moves -> [Moves]
 buildNodes bo mo = map (add mo) $ validIndexes bo mo
-    where add bs b = bs ++ [b]
+    where add ys y = ys ++ [y]
 
 validIndexes :: Board -> Moves -> Moves
 validIndexes bd mov = filter (\x -> x `notElem` movedExceeds) ordIndexes
@@ -61,7 +60,7 @@ validIndexes bd mov = filter (\x -> x `notElem` movedExceeds) ordIndexes
             -- remain only the column index that have been put pieces in
             movedColIndexes = filter (\x -> fst x `elem` (map fst tupleMoves)) tupleColumns
             -- the current height of each column: (index, height)
-            currentHeight = zipWith (\x y -> (fst x, (snd x)+(snd y))) tupleColumns tupleMoves
+            currentHeight = zipWith (\x y -> (fst x, (snd x)+(snd y))) movedColIndexes tupleMoves
             -- get the column indexes which height >= board height
             movedExceeds = map fst $ filter (\x -> snd x >= height) currentHeight
 
@@ -70,22 +69,21 @@ evaluate boad bd = (myGetScore bd (turn boad)) - (myGetScore bd (otherPlayer $ t
 
 maxAlg :: Board -> Tree Moves -> [(Score, Moves)]
 maxAlg maxb (Node x []) = [(evaluate maxb (myUpdateBoard maxb x), x)]
-maxAlg maxb (Node _ ls) = mapMin $ map (minAlg maxb) ls
+maxAlg maxb (Node _ ls) = checkMinPrun $ map (minAlg maxb) ls
 
-mapMin :: [[(Score, Moves)]] -> [(Score, Moves)]
-mapMin [] = []
-mapMin (xs:rest) = n : (omit n rest)
-  where n = minOfTuple xs
-        omit :: (Score, Moves) -> [[(Score, Moves)]] -> [(Score, Moves)]
-        omit _ [] = []
-        omit n (xs:rest) | minLeq n xs = omit n rest
-                         | otherwise   = k : omit k rest
-                             where k = minOfTuple xs
+checkMinPrun :: [[(Score, Moves)]] -> [(Score, Moves)]
+checkMinPrun [] = []
+checkMinPrun (xs:xss) = n : (minPrun n xss)
+      where  n = minOfTuple xs
+             minPrun :: (Score, Moves) -> [[(Score, Moves)]] -> [(Score, Moves)]
+             minPrun _ [] = []
+             minPrun e (cs:css)  | minCompare e xs = minPrun e css
+                                 | otherwise   = (minOfTuple cs) : minPrun (minOfTuple cs) css
 
-        minLeq ::  (Score, Moves) -> [(Score, Moves)] -> Bool
-        minLeq _ [] = False
-        minLeq n (y:ys) | fst y <= (fst n) = True
-                        | otherwise = minLeq n ys
+             minCompare ::  (Score, Moves) -> [(Score, Moves)] -> Bool
+             minCompare _ [] = False
+             minCompare s (y:ys) | fst y <= (fst s) = True
+                                 | otherwise = minCompare s ys
 
 -- choose the tuple that has the largest first element
 maxOfTuple :: [(Score, Moves)] -> (Score, Moves)
@@ -94,19 +92,21 @@ maxOfTuple tps = head $ filter(\z -> fst z == bestScore) tps
 
 minAlg :: Board -> Tree Moves -> [(Score, Moves)]
 minAlg minb (Node x []) = [(evaluate minb (myUpdateBoard minb x), x)]
-minAlg minb (Node _ ls) = mapMax $ map (maxAlg minb) ls
+minAlg minb (Node _ ls) = checkMaxPrun $ map (maxAlg minb) ls
 
-mapMax :: [[(Score, Moves)]] -> [(Score, Moves)]
-mapMax [] = []
-mapMax (xs:rest) = n : (omit' n rest)
-  where n = minOfTuple xs
-        omit' _ [] = []
-        omit' n (xs:rest) | maxLeq n xs = omit' n rest
-                          | otherwise   = k : omit' k rest
-                              where k = minOfTuple xs
-        maxLeq _ [] = False
-        maxLeq n (y:ys) | fst y >= (fst n) = True
-                        | otherwise = maxLeq n ys
+checkMaxPrun :: [[(Score, Moves)]] -> [(Score, Moves)]
+checkMaxPrun [] = []
+checkMaxPrun (ms:mss) = n : (maxPrun n mss)
+      where  n = minOfTuple ms
+             maxPrun _ [] = []
+             maxPrun e (zs:zss)
+                    | maxCompare e zs = maxPrun e zss
+                    | otherwise   = (minOfTuple zs) : maxPrun (minOfTuple zs) zss
+
+             maxCompare _ [] = False
+             maxCompare s (y:ys)
+                    | fst y >= (fst s) = True
+                    | otherwise = maxCompare s ys
 
 -- choose the tuple that has the smallest first element
 minOfTuple :: [(Score, Moves)] -> (Score, Moves)
@@ -147,8 +147,3 @@ myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
 myUpdateBoard :: Board -> Moves -> Board
 myUpdateBoard grid (y : ys) = myUpdateBoard (updateBoardNoScore grid y) ys
 myUpdateBoard grid [] = grid
-
-test = Board{board = [[],[Red],[Red,Blue,Blue],[Red],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (5,3), connect = 4}
-b = Board{board = [[],[],[],[Red],[Red],[Blue],[Red],[Red],[Blue],[],[],[],[Blue],[],[],[],[],[],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (20,1), connect = 5}
-bb = Board{board = [[],[],[],[],[Blue,Red],[Blue,Red,Blue,Red,Blue,Red,Red,Blue,Red,Blue],[],[],[],[]], blueScore = 0, redScore= 0, turn = BlueBot,dimension = (11,10),connect = 5}
-o = Board{board = [[],[Blue,Red],[Blue,Red,Red,Blue],[]], blueScore = 0, redScore= 0, turn = BlueBot,dimension = (4,4),connect = 3}

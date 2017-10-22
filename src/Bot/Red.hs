@@ -40,7 +40,7 @@ validIndexes bd mov = filter (\x -> x `notElem` movedExceeds) ordIndexes
             -- prioritise the center column
             ordIndexes = sortBy (comparing (\i -> abs $ (width + 1) `div` 2 - i)) indexes
             -- delete the index of column which have already fulled
-            indexes = filter (`notElem` exceedIndexes) [1..width]
+            indexes =  [1..width]
             width = fst $ dimension bd
             height = snd $ dimension bd
             -- find the indexes of the columns that have fulled originally

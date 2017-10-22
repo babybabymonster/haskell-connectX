@@ -5,7 +5,7 @@
 -- Lab Time:Friday 9:00 am - 11:00 am
 
 module Bot.Blue where
-    
+
 import Data.Board
 --import Data.Player
 import Data.List
@@ -21,116 +21,109 @@ data Tree a = Node{root :: a,
 
 type Forest a = [Tree a]
 
-type GN = (Index, Player)
+type Moves = [Index]
 
-type GNS = [(Index, Player)]
-
+type S = (Score, Moves)
 
 
 makeMove :: Board -> LookAhead -> Int
-makeMove b depth
-    | even depth = fst $ head $ snd $ maxAlg b (genTree 2 b depth [])
-    | otherwise = fst $ head $ snd $ maxAlg b (genTree 1 b depth [])
---     RedBot -> fst $ head $ snd $ minAlg b (genTree b depth [])
+makeMove b depth = head $ snd $ head $ maxAlg b (genTree b depth [])
+   --     RedBot -> fst $ head $ snd $ minAlg b (genTree b depth [])
 --     | -> error "not a valid player"
 
--- generate a tree of [(Index, Player)]
-genTree :: Int -> Board -> LookAhead -> GNS -> Tree GNS
-genTree _ _ 0 gs = (Node gs [])
-genTree x bod n gs = case x of
-    1 -> (Node gs $ map (genTree 1 bod (n-1)) $ filter (\x -> validIndexes bod x) $ buildNodes gs (genGNSodd n bod))
-    2 -> (Node gs $ map (genTree 2 bod (n-1)) $ filter (\x -> validIndexes bod x) $ buildNodes gs (genGNSeven n bod))
-        -- where
+-- generate a tree of [Index]
+genTree :: Board -> LookAhead -> Moves -> Tree Moves
+genTree _ 0 ms = (Node ms [])
+genTree bod n ms = (Node ms $ map (genTree bod (n-1)) $ buildNodes bod ms)
 
+buildNodes :: Board -> Moves -> [Moves]
+buildNodes bo mo = map (add mo) $ validIndexes bo mo
+    where add ys y = ys ++ [y]
 
-
-
-validIndexes :: Board -> GNS -> Bool
-validIndexes bb tuples
-    | snd (head (maxOfSecOfTuple tupleMovedIndexes)) <= (snd $ dimension bb) = True
-    | snd (head (maxOfSecOfTuple totalHeight)) <= (snd $ dimension bb) = True
-    | otherwise = error "something's wrong"
+validIndexes :: Board -> Moves -> Moves
+validIndexes bd mov = filter (\x -> x `notElem` movedExceeds) ordIndexes
+-- t bd mov = filter (\x -> x `notElem` movedExceeds) ordIndexes
     where
-            -- the height of each column which has been put piece on
-            totalHeight = zipWith (\x y -> (fst x, (snd x) + (snd y))) movedIndexesTuples tupleMovedIndexes
-            movedIndexesTuples = filter (\x -> (fst x) `elem` (map fst tupleMovedIndexes)) tupleColIndexes
-            tupleColIndexes = zip [1..fst $ dimension bb]lengthOfCol
-            lengthOfCol = map length (board bb)
-            -- get a list of tuples: (index, the occurence of this index)
-            tupleMovedIndexes = zip noDuplicates lengthOfIndexes
-            -- delete duplicate indexes in the list and sort the list
-            noDuplicates = map head $ group $ sort $ map fst tuples
-            -- get the occurence of each moved column indexes
-            lengthOfIndexes = map length $ group $ sort $ map fst tuples
-
---             tupleMovedIndexes = zip noDuplicates lengthOfIndexes
---             -- delete duplicate indexes in the list and sort the list
---             noDuplicates = map head $ group $ sort listOfIndexes
---             -- get the occurence of each moved column indexes
---             lengthOfIndexes = map length groupedIndexes
---             groupedIndexes = group $ sort listOfIndexes
---             listOfIndexes = map fst tuples
-
--- choose the tuple that has the largest second element
-maxOfSecOfTuple :: [(Index, Int)] -> [(Index, Int)]
-maxOfSecOfTuple tps = filter (\z -> snd z == bestScore) tps
-    where bestScore = maximum $ map snd tps
-
-
--- mostCommon list = fst . maximumBy (compare `on` snd) $ elemCount
---       where  elemCount = map (head &&& length) . group . sort $ list
-
-buildNodes :: GNS -> GNS -> [GNS]
-buildNodes gs1 gs2 = map (add gs1) gs2
-    where add gns g = gns ++ [g]
-
-genGNSodd :: LookAhead -> Board -> GNS
-genGNSodd look bd
-    | odd look = zip ordIndexes (replicate (length ordIndexes) (turn bd))
-    | even look = zip ordIndexes (replicate (length ordIndexes) (otherPlayer (turn bd)))
-    where   ordIndexes = sortBy (comparing (\i -> abs $ (fst(dimension bd) + 1) `div` 2 - i)) indexes
-            indexes = filter (\x -> x `notElem` exceedIndexes) [1..fst(dimension bd)]
-            exceedIndexes = map fst $ filter (\x -> snd x >= (snd $ dimension bd)) tupleColIndexes
-            tupleColIndexes = zip [1..fst $ dimension bd] lengthOfCol
+            -- prioritise the center column
+            ordIndexes = sortBy (comparing (\i -> abs $ (width + 1) `div` 2 - i)) indexes
+            -- delete the index of column which have already fulled
+            indexes = filter (`notElem` exceedIndexes) [1..width]
+            width = fst $ dimension bd
+            height = snd $ dimension bd
+            -- find the indexes of the columns that have fulled originally
+            exceedIndexes = map fst $ filter (\x -> snd x >= height) tupleColumns
+            -- calculate the height of each column
             lengthOfCol = map length (board bd)
-
-
-
-genGNSeven :: LookAhead -> Board -> GNS
-genGNSeven look bd
-    | even look = zip ordIndexes (replicate (length ordIndexes) (turn bd))
-    | odd look = zip ordIndexes (replicate (length ordIndexes) (otherPlayer (turn bd)))
-    where   ordIndexes = sortBy (comparing (\i -> abs $ (fst(dimension bd) + 1) `div` 2 - i)) indexes
-            indexes = filter (\x -> x `notElem` exceedIndexes) [1..fst(dimension bd)]
-            exceedIndexes = map fst $ filter (\x -> snd x >= (snd $ dimension bd)) tupleColIndexes
-            tupleColIndexes = zip [1..fst $ dimension bd] lengthOfCol
-            lengthOfCol = map length (board bd)
+            -- the index of each column
+            colIndexes = [1..width]
+            -- make a lists of tuples: (column index, column height)
+            tupleColumns = zip colIndexes lengthOfCol
+            -- get the occurrences of each sorted index in moves
+            occurrences = map length $ group $ sort mov
+            -- sort the indexes in moves and delete duplicates
+            moveIndex = map head $ group $ sort mov
+            -- make a list of tuples: (move index, index occurrence)
+            tupleMoves = zip moveIndex occurrences
+            -- remain only the column index that have been put pieces in
+            movedColIndexes = filter (\x -> fst x `elem` (map fst tupleMoves)) tupleColumns
+            -- the current height of each column: (index, height)
+            currentHeight = zipWith (\x y -> (fst x, (snd x)+(snd y))) movedColIndexes tupleMoves
+            -- get the column indexes which height >= board height
+            movedExceeds = map fst $ filter (\x -> snd x >= height) currentHeight
 
 evaluate :: Board -> Board -> Score
 evaluate boad bd = (myGetScore bd (turn boad)) - (myGetScore bd (otherPlayer $ turn boad))
 
-maxAlg :: Board -> Tree GNS -> (Score, GNS)
-maxAlg maxb (Node x []) = (evaluate maxb (myUpdateBoard maxb x), x)
-maxAlg maxb (Node _ ls) = maxOfTuple $ map (minAlg maxb) ls
+maxAlg :: Board -> Tree Moves -> [(Score, Moves)]
+maxAlg maxb (Node x []) = [(evaluate maxb (myUpdateBoard maxb x), x)]
+maxAlg maxb (Node _ ls) = checkMinPrun $ map (minAlg maxb) ls
+
+checkMinPrun :: [[(Score, Moves)]] -> [(Score, Moves)]
+checkMinPrun [] = []
+checkMinPrun (xs:xss) = n : (minPrun n xss)
+      where  n = minOfTuple xs
+             minPrun :: (Score, Moves) -> [[(Score, Moves)]] -> [(Score, Moves)]
+             minPrun _ [] = []
+             minPrun e (cs:css)  | minCompare e xs = minPrun e css
+                                 | otherwise   = (minOfTuple cs) : minPrun (minOfTuple cs) css
+
+             minCompare ::  (Score, Moves) -> [(Score, Moves)] -> Bool
+             minCompare _ [] = False
+             minCompare s (y:ys) | fst y <= (fst s) = True
+                                 | otherwise = minCompare s ys
 
 -- choose the tuple that has the largest first element
-maxOfTuple :: [(Score, GNS)] -> (Score, GNS)
+maxOfTuple :: [(Score, Moves)] -> (Score, Moves)
 maxOfTuple tps = head $ filter(\z -> fst z == bestScore) tps
     where bestScore = maximum $ map fst tps
 
-minAlg :: Board -> Tree GNS -> (Score, GNS)
-minAlg minb (Node x []) = (evaluate minb (myUpdateBoard minb x), x)
-minAlg minb (Node _ ls) = minOfTuple $ map (maxAlg minb) ls
+minAlg :: Board -> Tree Moves -> [(Score, Moves)]
+minAlg minb (Node x []) = [(evaluate minb (myUpdateBoard minb x), x)]
+minAlg minb (Node _ ls) = checkMaxPrun $ map (maxAlg minb) ls
+
+checkMaxPrun :: [[(Score, Moves)]] -> [(Score, Moves)]
+checkMaxPrun [] = []
+checkMaxPrun (ms:mss) = n : (maxPrun n mss)
+      where  n = minOfTuple ms
+             maxPrun _ [] = []
+             maxPrun e (zs:zss)
+                    | maxCompare e zs = maxPrun e zss
+                    | otherwise   = (minOfTuple zs) : maxPrun (minOfTuple zs) zss
+
+             maxCompare _ [] = False
+             maxCompare s (y:ys)
+                    | fst y >= (fst s) = True
+                    | otherwise = maxCompare s ys
 
 -- choose the tuple that has the smallest first element
-minOfTuple :: [(Score, GNS)] -> (Score, GNS)
+minOfTuple :: [(Score, Moves)] -> (Score, Moves)
 minOfTuple tps = head $ filter(\z -> fst z == bestScore) tps
     where bestScore = minimum $ map fst tps
 
 myGetScore :: Board -> Player -> Score
-myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
+myGetScore bg p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
     where
-        streak    = connect b
+        streak    = connect bg
         minStreak = 1 + streak `div` 2
         otherBot  = otherPlayer p
 
@@ -139,43 +132,17 @@ myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
         diagonalScore  =  calScore $ diagonals $ filledMatrix
         otherDiagScore =  calScore $ diagonals $ map reverse $ filledMatrix
 
-        filledMatrix   = map (fillColumn Empty $ snd $ dimension b) $ board b
+        filledMatrix   = map (fillColumn Empty $ snd $ dimension bg) $ board bg
 
         calColScore mat = sum $ (map (streakScore . length)) $ map concat
                               $ map (splitOn [Empty]) $ filter ((>=streak).length)
                                     $ map last $ map (splitOn [corresCell otherBot]) mat
-
-        calScore mat = sum $ (map (streakScore . length)) $ concatMap (splitOn [Empty])
-                           $ filter ((>=streak).length) $ map concat
-                                $ map (splitOn [corresCell otherBot]) mat
-
-        streakScore :: Int -> Score
-        streakScore i
-                    | i < minStreak     = 0
-                    | i < (streak -1)   = 1 * 100
-                    | i == (streak -1)  = i * 1000
-                    | i >= streak       = i * 10000
-                    | otherwise         = 0
-
--- myGetScore' :: Board -> Player -> Score
-myGetScore' b p = rowScore
--- myGetScore b p = sum [columnScore, rowScore, diagonalScore, otherDiagScore]
-    where
-        streak    = connect b
-        minStreak = 1 + streak `div` 2
-        otherBot  = otherPlayer p
-
-        columnScore    =  calColScore $ filledMatrix
-        rowScore       =  calScore $ transpose $ filledMatrix
-        diagonalScore  =  calScore $ diagonals $ filledMatrix
-        otherDiagScore =  calScore $ diagonals $ map reverse $ filledMatrix
-
-        filledMatrix   = map (fillColumn Empty $ snd $ dimension b) $ board b
-
-        calColScore mat = sum $ (map (streakScore . length)) $ map concat
-                              $ map (splitOn [Empty]) $ filter ((>=streak).length)
-                                    $ map last $ map (splitOn [corresCell otherBot]) mat
---         tt =
+--         calRowScore mat = filter (\x -> (>= streak - 1).length . (filter (==corresCell p) x)) $ map concat
+--                         $ map (\x -> map (\y -> if y == [] then [Empty] else y))
+--                          $ map (\x -> map (splitOn [Empty]) x)
+--                         -- remain only the lists that is able to win
+--                             $ map (filter ((>= streak).length))
+--                                 $ map (splitOn [corresCell otherBot]) mat
         -- remain only the parts that has enough space to win
         y mat = map (splitOn [Empty]) $ filter ((>=streak).length)
                 $ concatMap (splitOn [corresCell otherBot]) mat
@@ -185,6 +152,7 @@ myGetScore' b p = rowScore
         bonusTwoEnd mat = sum $ map (bonusScore . length) $ filter ((>=(streak -2)).length) $ map concat (emptyTwoEnd mat)
         -- add bonus for the situation that there are several possibilities to win
         number mat = 10 * length (y mat)
+        -- find the situation when there is only one space in the middle: [o,o,o, ,o,o]
         -- calculate the length of my bot of each part that has a chance to win
         calScore mat = (number mat) * (sum $ map (streakScore . length) (map concat $ y mat)) + (bonusTwoEnd mat)
 
@@ -201,17 +169,21 @@ myGetScore' b p = rowScore
 
         streakScore :: Int -> Score
         streakScore i
-            | i < minStreak     = 0
-            | i < (streak -1)   = 1 * 100
-            | i == (streak -1)  = i * 1000
-            | i >= streak       = i * 10000
-            | otherwise         = 0
+            | i < (streak `div` 2)    = 0
+            | i < minStreak         = i * 50
+            | i < (streak -2)       = 1 * 100
+            | i == (streak -2)      = i * 800
+            | i == (streak -1)      = i * 1000
+            | i >= streak           = i * 20000
+            | otherwise             = 0
 
         bonusScore s = s * 600
 
-myUpdateBoard :: Board -> GNS -> Board
-myUpdateBoard grid (y : ys) = myUpdateBoard (updateBoardNoScore grid $ fst y) ys
+myUpdateBoard :: Board -> Moves -> Board
+myUpdateBoard grid (y : ys) = myUpdateBoard (updateBoardNoScore grid y) ys
 myUpdateBoard grid [] = grid
 
-test = Board{board = [[],[Red],[Red,Blue,Blue],[Red],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (5,3), connect = 4}
-b = Board{board = [[],[],[],[Red],[Red],[Red],[],[Blue],[],[Red],[Red],[Red],[Blue],[Red],[Red],[Red],[],[],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (20,1), connect = 5}
+-- test = Board{board = [[],[Red],[Red,Blue,Blue],[Red],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (5,3), connect = 4}
+-- b = Board{board = [[],[],[],[Red],[Red],[Blue],[Red],[Red],[Blue],[],[],[],[Blue],[],[],[],[],[],[]], blueScore = 0, redScore = 0, turn = BlueBot, dimension = (20,1), connect = 5}
+-- bb = Board{board = [[],[],[],[],[Blue,Red],[Blue,Red,Blue,Red,Blue,Red,Red,Blue,Red,Blue],[],[],[],[]], blueScore = 0, redScore= 0, turn = BlueBot,dimension = (11,10),connect = 5}
+-- o = Board{board = [[],[Blue,Red],[Blue,Red,Red,Blue],[]], blueScore = 0, redScore= 0, turn = BlueBot,dimension = (4,4),connect = 3}
